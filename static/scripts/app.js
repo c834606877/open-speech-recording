@@ -179,39 +179,20 @@ function visualize(stream) {
 }
 
 var wantedWords = [
-  'Zero',
-  'One',
-  'Two',
-  'Three',
-  'Four',
-  'Five',
-  'Six',
-  'Seven',
-  'Eight',
-  'Nine',
-  'On',
-  'Off',
-  'Stop',
-  'Go',
-  'Up',
-  'Down',
-  'Left',
-  'Right',
-  'Yes',
-  'No',
+  '开始',
+  '结束',
+  // '确定',
+  // '向前',
+  // '向左',
+  // '向右',
+  // '向后',
+  // '后退',
+  // '前进',
+  // '取消'
 ];
 
 var fillerWords = [
-  'Dog',
-  'Cat',
-  'Bird',
-  'Tree',
-  'Marvin',
-  'Sheila',
-  'House',
-  'Bed',
-  'Wow',
-  'Happy',
+
 ];
 
 function getRecordedWords() {
@@ -230,7 +211,7 @@ function getRecordedWords() {
 function getAllWantedWords() {
   var wordCounts = {};
   wantedWords.forEach(function(word) {
-    wordCounts[word] = 5;
+    wordCounts[word] = 2;
   });
   fillerWords.forEach(function(word) {
     wordCounts[word] = 1;
