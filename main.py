@@ -54,12 +54,14 @@ def start():
     response.set_cookie('session_id', session_id)
     return response
 
+
+
 @app.route('/upload', methods=['POST'])
 def upload():
-    session_id = request.cookies.get('session_id')
+    session_id = request.cookies.get('session_id') or 'session_id'
     if not session_id:
         make_response('No session', 400)
-    word = request.args.get('word')
+    word = request.args.get('word') or 'word'
     audio_data = request.data
     filename = urlencode(word) + '_' + session_id + '_' + uuid.uuid4().hex + '.ogg'
     secure_name = secure_filename(filename)
@@ -81,6 +83,39 @@ def upload():
     )
     print response['ETag']
     return make_response('All good')
+
+@app.route('/upload_mp3', methods=['POST'])
+def upload():
+    session_id = request.args.get('session_id') or 'session_id'
+    word = request.args.get('word') or 'word'
+    if 'file' not in request.files:
+        return make_response('No file')
+    file = request.files['file']
+
+    filename = urlencode(word) + '_' + session_id + '_' + uuid.uuid4().hex + '.mp3'
+    secure_name = secure_filename(filename)
+    # Left in for debugging purposes. If you comment this back in, the data
+    # will be saved to the local file system.
+    filepath = "data/" + secure_name;
+    file.save(filepath)
+    
+    # Create a Cloud Storage client.
+    # gcs = storage.Client()
+    # bucket = gcs.get_bucket(CLOUD_STORAGE_BUCKET)
+    # blob = bucket.blob(secure_name)
+    # blob.upload_from_string(audio_data, content_type='audio/ogg')
+
+
+    response = client.put_object_from_local_file(
+        Bucket = CLOUD_STORAGE_BUCKET,
+        LocalFilePath = filepath,
+        Key = file_name
+    )
+
+    print response['ETag']
+    return make_response('All good')
+
+
 
 # CSRF protection, see http://flask.pocoo.org/snippets/3/.
 @app.before_request
