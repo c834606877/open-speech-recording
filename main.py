@@ -5,8 +5,8 @@ from flask import abort
 from flask import make_response
 from flask import redirect
 from flask import render_template
-from flask import request
-from flask import session
+from flask import request, url_for, session
+
 from werkzeug.utils import secure_filename
 
 from qcloud_cos import CosConfig
@@ -14,12 +14,16 @@ from qcloud_cos import CosS3Client
 
 import os
 import uuid
-from urllib.parse import urlencode
+from urllib import urlencode
+
+import wx
 
 app = Flask(__name__)
 
+app.register_blueprint(wx.wx)
+
 secret_id = 'AKIDujZItKUjgS3TihC9oQ7i9QYWKxQiRpdH'      # 替换为用户的 secretId
-secret_key = os.environ.get('CLOUD_STORAGE_KEY') or ''      # 替换为用户的 secretKey
+secret_key = os.environ.get('CLOUD_STORAGE_KEY') or 'a'      # 替换为用户的 secretKey
 region = 'ap-guangzhou'     # 替换为用户的 Region
 token = ''                  # 使用临时秘钥需要传入 Token，默认为空，可不填
 config = CosConfig(Secret_id=secret_id, Secret_key=secret_key, Region=region, Token=token)
@@ -84,43 +88,39 @@ def upload():
     print response['ETag']
     return make_response('All good')
 
+
+
 @app.route('/upload_mp3', methods=['POST'])
-def upload():
-    session_id = request.args.get('session_id') or 'session_id'
-    word = request.args.get('word') or 'word'
+def upload_mp3():
+    session_id = request.form.get('session_id') or 'session_id'
+    word = request.form.get('word') or 'word'
     if 'file' not in request.files:
         return make_response('No file')
     file = request.files['file']
 
-    filename = urlencode(word) + '_' + session_id + '_' + uuid.uuid4().hex + '.mp3'
+    filename = word + '_' + session_id + '_' + uuid.uuid4().hex + '.mp3'
     secure_name = secure_filename(filename)
     # Left in for debugging purposes. If you comment this back in, the data
     # will be saved to the local file system.
     filepath = "data/" + secure_name;
     file.save(filepath)
-    
-    # Create a Cloud Storage client.
-    # gcs = storage.Client()
-    # bucket = gcs.get_bucket(CLOUD_STORAGE_BUCKET)
-    # blob = bucket.blob(secure_name)
-    # blob.upload_from_string(audio_data, content_type='audio/ogg')
-
 
     response = client.put_object_from_local_file(
         Bucket = CLOUD_STORAGE_BUCKET,
         LocalFilePath = filepath,
-        Key = file_name
+        Key = filename
     )
 
-    print response['ETag']
     return make_response('All good')
+
+
 
 
 
 # CSRF protection, see http://flask.pocoo.org/snippets/3/.
 @app.before_request
 def csrf_protect():
-    if request.method == "POST":
+    if request.method == "POST" and '_csrf_token' in session:
         token = session['_csrf_token']
         if not token or token != request.args.get('_csrf_token'):
             abort(403)
@@ -134,5 +134,7 @@ app.jinja_env.globals['csrf_token'] = generate_csrf_token
 # Change this to your own number before you deploy.
 app.secret_key = os.environ.get('SESSION_SECRET_KEY') or 'defaul7_s3ssi0n_t0ken1'
 
+
 if __name__ == "__main__":
+    print app.url_map
     app.run(host="0.0.0.0",debug=True)
