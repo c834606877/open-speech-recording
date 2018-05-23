@@ -67,7 +67,7 @@ def upload():
         make_response('No session', 400)
     word = request.args.get('word') or 'word'
     audio_data = request.data
-    filename = urlencode(word) + '_' + session_id + '_' + uuid.uuid4().hex + '.ogg'
+    filename = word + '_' + session_id + '_' + uuid.uuid4().hex + '.ogg'
     secure_name = secure_filename(filename)
     # Left in for debugging purposes. If you comment this back in, the data
     # will be saved to the local file system.
