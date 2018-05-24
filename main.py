@@ -5,22 +5,29 @@ from flask import abort
 from flask import make_response
 from flask import redirect
 from flask import render_template
-from flask import request, url_for, session
+from flask import request, url_for, session, send_from_directory
 
 from werkzeug.utils import secure_filename
 
 from qcloud_cos import CosConfig
 from qcloud_cos import CosS3Client
 
-import os
+import os, time
 import uuid
 from urllib import urlencode
 
+import json
+
 import wx
+
+import HttpUtil 
 
 app = Flask(__name__)
 
 app.register_blueprint(wx.wx)
+
+
+
 
 secret_id = 'AKIDujZItKUjgS3TihC9oQ7i9QYWKxQiRpdH'      # 替换为用户的 secretId
 secret_key = os.environ.get('CLOUD_STORAGE_KEY') or 'a'      # 替换为用户的 secretKey
@@ -71,23 +78,53 @@ def upload():
     secure_name = secure_filename(filename)
     # Left in for debugging purposes. If you comment this back in, the data
     # will be saved to the local file system.
-    # with open("data/" + secure_name, 'wb') as f:
-    #    f.write(audio_data)
+    with open("web_data/" + secure_name, 'wb') as f:
+        f.write(audio_data)
     # Create a Cloud Storage client.
     # gcs = storage.Client()
     # bucket = gcs.get_bucket(CLOUD_STORAGE_BUCKET)
     # blob = bucket.blob(secure_name)
     # blob.upload_from_string(audio_data, content_type='audio/ogg')
-    response = client.put_object(
-        Bucket=CLOUD_STORAGE_BUCKET,
-        Body=audio_data,
-        Key=secure_name,
-        StorageClass='STANDARD',
-        ContentType='audio/ogg'
-    )
-    print response['ETag']
+    # response = client.put_object(
+    #     Bucket=CLOUD_STORAGE_BUCKET,
+    #     Body=audio_data,
+    #     Key=secure_name,
+    #     StorageClass='STANDARD',
+    #     ContentType='audio/ogg'
+    # )
+    # print response['ETag']
     return make_response('All good')
 
+def verify_mp3(link):
+    ht = HttpUtil.HttpUtil('','')
+    req = ht.sendPost("https://nlsapi.aliyun.com/transcriptions", 
+        json.dumps(
+            {   "app_key":"nls-service-telephone8khz",
+                "auto_split":False,
+                "callback_url":"",
+                "enable_callback":False,
+                "oss_link":link,
+                "valid_times":[],
+                "vocabulary_id":""
+            }
+            , separators=(',', ':')),
+        )
+    req_id = ''
+    if not req == '':
+        try:
+            req_id = json.loads(req)['id']
+
+        except Exception as e:
+            print "parse respose failed!"
+            raise e
+
+    time.sleep(2);
+    ret = ht.sendGet("https://nlsapi.aliyun.com/transcriptions/" + req_id)
+
+
+        
+    #if json.loads(ret)['status'] != "RUNNING":
+    #        break
 
 
 @app.route('/upload_mp3', methods=['POST'])
@@ -111,8 +148,17 @@ def upload_mp3():
         Key = filename
     )
 
+    #verify_mp3("https://osr.emlab.net/"+ filepath)
+
+
+
     return make_response('All good')
 
+
+
+@app.route('/data/<path:filename>')
+def base_data(filename):
+    return send_from_directory(app.root_path + '/data/', filename)
 
 
 
