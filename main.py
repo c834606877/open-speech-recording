@@ -27,15 +27,18 @@ app = Flask(__name__)
 app.register_blueprint(wx.wx)
 
 
-
+ali_ak_id = 'LTAIio3iLMnbWw0K'
+ali_ak_key = 'sU7sfP35tuvjSyNWE649JeBzTQSvDB'
 
 secret_id = 'AKIDujZItKUjgS3TihC9oQ7i9QYWKxQiRpdH'      # 替换为用户的 secretId
 secret_key = os.environ.get('CLOUD_STORAGE_KEY') or 'a'      # 替换为用户的 secretKey
 region = 'ap-guangzhou'     # 替换为用户的 Region
 token = ''                  # 使用临时秘钥需要传入 Token，默认为空，可不填
 config = CosConfig(Secret_id=secret_id, Secret_key=secret_key, Region=region, Token=token)
-
 client = CosS3Client(config)
+
+
+
 
 
 # Configure this environment variable via app.yaml
@@ -96,7 +99,7 @@ def upload():
     return make_response('All good')
 
 def verify_mp3(link):
-    ht = HttpUtil.HttpUtil('','')
+    ht = HttpUtil.HttpUtil(ali_ak_id, ali_ak_key)
     req = ht.sendPost("https://nlsapi.aliyun.com/transcriptions", 
         json.dumps(
             {   "app_key":"nls-service-telephone8khz",
@@ -118,8 +121,9 @@ def verify_mp3(link):
             print "parse respose failed!"
             raise e
 
-    time.sleep(2);
+    time.sleep(3);
     ret = ht.sendGet("https://nlsapi.aliyun.com/transcriptions/" + req_id)
+    return ret
 
 
         
@@ -183,4 +187,8 @@ app.secret_key = os.environ.get('SESSION_SECRET_KEY') or 'defaul7_s3ssi0n_t0ken1
 
 if __name__ == "__main__":
     print app.url_map
-    app.run(host="0.0.0.0",debug=True)
+    #app.run(host="0.0.0.0",debug=True)
+    re = verify_mp3("http://open-speech-recording-wx.oss-cn-shanghai.aliyuncs.com/right_081CebZ81ABJfR1AvAZ81jt3Z81CebZ4_6fdd10dd710f47688b12fa8f50cafba6.mp3")
+    print re.decode("utf-8")
+
+
